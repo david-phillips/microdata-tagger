@@ -1,0 +1,14 @@
+{
+    "http://schema.org/Person": [
+        "David Phillips",
+        "Dave Phillips",
+        "Davey"
+    ],
+    "http://schema.org/Organization": [
+        "Sweet Tooth"
+    ],
+    "http://schema.org/Place": [
+        "Buffalo",
+        "Buffalo, NY"
+    ]
+}
