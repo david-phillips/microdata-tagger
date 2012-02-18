@@ -29,7 +29,7 @@ class MicrodataTagger(object):
             for lexentry in self.lexicon[semtype]:
                 pattern = self.make_pattern(lexentry)
                 self.apply_pattern(pattern, semtype)
-        if self.textmode:
+        if self.opt_textmode:
             return tagger.new_markup
         else:
             return self.merge_markups()
@@ -44,18 +44,25 @@ class MicrodataTagger(object):
         self.new_markup = re.sub(pattern, sub_callback, self.new_markup)
 
     def make_pattern(self, s):
-        re_name_parts = []
-        name_parts = s.split()
-        for np_i in range(len(name_parts)):
-            key = 'name_' + str(np_i)
-            re_part = '(?P<%s>%s)' % (key, name_parts[np_i])
-            re_name_parts.append(re_part)
-        if opt_textmode:
-            re_junk = r'([ \t\r\n]*)'
-            pattern = re_junk.join(re_name_parts)
+        # Treat regex entry as regex literal
+        if s.startswith('r:'):
+            lex_regex_literal = s[2:]
+            # Capture the entry if capture parens aren't present
+            if not (lex_regex_literal.startswith('(') and lex_regex_literal.endswith('(')):
+                pattern = '('+s[2:]+')'
         else:
-            re_junk = r'(<[^>]*>*|[ \t\r\n]*)'
-            pattern = re_junk + re_junk.join(re_name_parts) + re_junk
+            re_name_parts = []
+            name_parts = s.split()
+            for np_i in range(len(name_parts)):
+                key = 'name_' + str(np_i)
+                re_part = '(?P<%s>%s)' % (key, name_parts[np_i])
+                re_name_parts.append(re_part)
+            if self.opt_textmode:
+                re_junk = r'([ \t\r\n]*)'
+                pattern = re_junk.join(re_name_parts)
+            else:
+                re_junk = r'(<[^>]*>*|[ \t\r\n]*)'
+                pattern = re_junk + re_junk.join(re_name_parts) + re_junk
         return pattern
 
 if __name__ == '__main__':
