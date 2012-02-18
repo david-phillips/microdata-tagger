@@ -7,7 +7,10 @@ except ImportError:
     import simplejson as json
 
 class MicrodataTagger(object):
-    ''' '''
+    ''' 
+    Instances of this class are used to tag text/markup
+    with microdata.
+    '''
     def __init__(self, lexfile, opt_textmode=True, opt_nameparts=False):
         self.lexfile = lexfile
         self.opt_textmode = opt_textmode
@@ -16,13 +19,24 @@ class MicrodataTagger(object):
         self.old_markup = None
         self.load_lexicon(lexfile)
 
+
     def load_lexicon(self, lexfile):
+        '''
+        Loads the lexicon into dict with json library.
+        '''
         try:
             self.lexicon = json.load(open(lexfile))
         except Exception:
             sys.exit('Input lexicon was not valid JSON... exiting.')
+
         
     def tag_markup(self, markup):
+        '''
+        For each entry in the lexicon, create
+        a regex and apply it to the input text.
+
+        Returns the microdata-annotated text/markup.
+        '''
         self.old_markup = markup
         self.new_markup = re.sub(r'<[^>]*>', '', markup)
         for semtype in self.lexicon:
@@ -35,15 +49,21 @@ class MicrodataTagger(object):
             return self.merge_markups()
 
     def apply_pattern(self, pattern, semtype):
+        '''
+        Creates regex from pattern string and performs
+        an re.sub with repl param set to local callback.
+        '''
         def sub_callback(match):
             groups = match.groups()
             beg_tag = '<span itemscope itemtype="%s" itemprop="name">' % semtype
             end_tag = '</span>'
             return beg_tag + ''.join(groups) + end_tag
-        pattern = re.compile(pattern, re.I|re.M|re.S)
         self.new_markup = re.sub(pattern, sub_callback, self.new_markup)
 
     def make_pattern(self, s):
+        '''
+        Given a lexical entry, returns a regex.
+        '''
         # Treat regex entry as regex literal
         if s.startswith('r:'):
             lex_regex_literal = s[2:]
@@ -57,13 +77,15 @@ class MicrodataTagger(object):
                 key = 'name_' + str(np_i)
                 re_part = '(?P<%s>%s)' % (key, name_parts[np_i])
                 re_name_parts.append(re_part)
+            # If input is text, allow for whitespace between tokens.
             if self.opt_textmode:
                 re_junk = r'([ \t\r\n]*)'
                 pattern = re_junk.join(re_name_parts)
+            # If input is markup, allow for whitespace/tags between tokens.
             else:
                 re_junk = r'(<[^>]*>*|[ \t\r\n]*)'
                 pattern = re_junk + re_junk.join(re_name_parts) + re_junk
-        return pattern
+        return re.compile(pattern, re.I|re.M|re.S)
 
 if __name__ == '__main__':
     tagger = MicrodataTagger('sample-lexicon.json')
